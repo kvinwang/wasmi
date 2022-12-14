@@ -53,6 +53,7 @@ pub(crate) enum FuncInstanceInternal {
         signature: Rc<Signature>,
         module: Weak<ModuleInstance>,
         body: Rc<FuncBody>,
+        index: usize,
     },
     Host {
         signature: Signature,
@@ -112,11 +113,13 @@ impl FuncInstance {
         module: Weak<ModuleInstance>,
         signature: Rc<Signature>,
         body: FuncBody,
+        index: usize,
     ) -> FuncRef {
         let func = FuncInstanceInternal::Internal {
             signature,
             module,
             body: Rc::new(body),
+            index,
         };
         FuncRef(Rc::new(FuncInstance(func)))
     }
@@ -220,6 +223,13 @@ impl FuncInstance {
                     finished: false,
                 },
             }),
+        }
+    }
+    /// Get index of the function.
+    pub fn index(&self) -> usize {
+        match self.as_internal() {
+            FuncInstanceInternal::Internal { index, .. } => *index,
+            FuncInstanceInternal::Host { .. } => usize::MAX,
         }
     }
 }
