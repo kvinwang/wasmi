@@ -284,9 +284,16 @@ impl Interpreter {
                 function_context.initialize(&function_body.locals, &mut self.value_stack)?;
             }
 
-            let function_return = self
+            let result = self
                 .do_run_function(&mut function_context, &function_body.code)
-                .map_err(Trap::from)?;
+                .map_err(Trap::from);
+
+            let function_return = match result {
+                Ok(ret) => ret,
+                Err(err) => {
+                    panic!("Traped: {:?}, stack backtrace: {:?}", err, self.call_stack.trace());
+                },
+            };
 
             match function_return {
                 RunResult::Return => {
@@ -1504,6 +1511,10 @@ impl CallStack {
 
     fn is_full(&self) -> bool {
         self.buf.len() + 1 >= self.limit
+    }
+
+    fn trace(&self) -> Vec<usize> {
+        self.buf.iter().map(|f| f.function.index()).collect()
     }
 }
 
