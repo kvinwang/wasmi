@@ -9,6 +9,7 @@ use self::buffer::ByteBuffer;
 pub use self::{
     data::{DataSegment, DataSegmentEntity, DataSegmentIdx},
     error::MemoryError,
+    buffer::with_js_context,
 };
 use super::{AsContext, AsContextMut, StoreContext, StoreContextMut, Stored};
 use crate::{
@@ -313,6 +314,10 @@ impl MemoryEntity {
         self.bytes.data_mut()
     }
 
+    pub fn js_buffer(&self) -> Option<js::JsArrayBuffer> {
+        self.bytes.js_buffer()
+    }
+
     /// Reads `n` bytes from `memory[offset..offset+n]` into `buffer`
     /// where `n` is the length of `buffer`.
     ///
@@ -482,6 +487,10 @@ impl Memory {
     /// Panics if `ctx` does not own this [`Memory`].
     pub fn data_mut<'a, T: 'a>(&self, ctx: impl Into<StoreContextMut<'a, T>>) -> &'a mut [u8] {
         ctx.into().store.inner.resolve_memory_mut(self).data_mut()
+    }
+
+    pub fn js_buffer<'a, T: 'a>(&self, ctx: impl Into<StoreContext<'a, T>>) -> Option<js::JsArrayBuffer> {
+        ctx.into().store.inner.resolve_memory(self).js_buffer()
     }
 
     /// Returns an exclusive slice to the bytes underlying the [`Memory`], and an exclusive

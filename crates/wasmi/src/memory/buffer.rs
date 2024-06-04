@@ -1,5 +1,6 @@
 use core::mem::ManuallyDrop;
-use std::{slice, vec, vec::Vec};
+use std::cell::RefCell;
+use std::{slice, vec::Vec};
 
 /// A byte buffer implementation.
 ///
@@ -26,8 +27,8 @@ pub struct ByteBuffer {
     /// - **Vec**: `vec.capacity()`
     /// - **Static:** The total length of the underlying static byte buffer.
     capacity: usize,
-    /// Whether the [`ByteBuffer`] was initialized from a `&'static [u8]` or a `Vec<u8>`.
-    is_static: bool,
+    /// The underlying JS array buffer.
+    buffer: Option<js::JsArrayBuffer>,
 }
 
 // # Safety
@@ -60,6 +61,27 @@ fn vec_into_raw_parts(vec: Vec<u8>) -> (*mut u8, usize, usize) {
     (vec.as_mut_ptr(), vec.len(), vec.capacity())
 }
 
+std::thread_local! {
+    static CURRENT_JS_CONTEXT: RefCell<Option<js::Context>> = RefCell::new(None);
+}
+
+pub fn with_js_context<T>(js_ctx: &js::Context, f: impl FnOnce() -> T) -> T {
+    CURRENT_JS_CONTEXT.with(|ctx| {
+        *ctx.borrow_mut() = Some(js_ctx.clone());
+    });
+    let v = f(); 
+    CURRENT_JS_CONTEXT.with(|ctx| {
+        *ctx.borrow_mut() = None;
+    });
+    v
+}
+
+fn current_js_context() -> js::Context {
+    CURRENT_JS_CONTEXT.with(|ctx| {
+        ctx.borrow().clone().expect("no current JS context")
+    })
+}
+
 impl ByteBuffer {
     /// Creates a new byte buffer with the given initial length.
     ///
@@ -67,13 +89,16 @@ impl ByteBuffer {
     ///
     /// If there is not enough memory to initialize `initial_len` bytes.
     pub fn new(initial_len: usize) -> Self {
-        let vec = vec![0x00_u8; initial_len];
-        let (ptr, len, capacity) = vec_into_raw_parts(vec);
+        let buffer = js::JsArrayBuffer::new(&current_js_context(), initial_len)
+            .expect("failed to allocate memory");
+        let ptr = buffer.as_ptr() as _;
+        let len = initial_len;
+        let capacity = len;
         Self {
             ptr,
             len,
             capacity,
-            is_static: false,
+            buffer: Some(buffer),
         }
     }
 
@@ -91,7 +116,7 @@ impl ByteBuffer {
             ptr: buffer.as_mut_ptr(),
             len: initial_len,
             capacity: buffer.len(),
-            is_static: true,
+            buffer: None,
         }
     }
 
@@ -105,14 +130,13 @@ impl ByteBuffer {
     /// - If backed by static buffer and `new_size` is larger than it's capacity.
     pub fn grow(&mut self, new_size: usize) {
         assert!(new_size >= self.len());
-        match self.get_vec() {
-            Some(mut vec) => {
-                // Case: the byte buffer is backed by a `Vec<u8>`.
-                vec.resize(new_size, 0x00_u8);
-                let (ptr, len, capacity) = vec_into_raw_parts(vec);
-                self.ptr = ptr;
-                self.len = len;
-                self.capacity = capacity;
+        match &self.buffer {
+            Some(buffer) => {
+                let new_buffer = buffer.transfer(new_size).expect("failed to resize buffer");
+                self.ptr = new_buffer.as_ptr() as _;
+                self.len = new_size;
+                self.capacity = new_size;
+                self.buffer = Some(new_buffer);
             }
             None => {
                 // Case: the byte buffer is backed by a `&'static [u8]`.
@@ -149,28 +173,8 @@ impl ByteBuffer {
         unsafe { slice::from_raw_parts_mut(self.ptr, self.len) }
     }
 
-    /// Returns the underlying `Vec<u8>` if the byte buffer is not backed by a static buffer.
-    ///
-    /// Otherwise returns `None`.
-    ///
-    /// # Note
-    ///
-    /// The returned `Vec` will free its memory and thus the memory of the [`ByteBuffer`] if dropped.
-    fn get_vec(&mut self) -> Option<Vec<u8>> {
-        if self.is_static {
-            return None;
-        }
-        // Safety
-        //
-        // - At this point we are guaranteed that the byte buffer is backed by a `Vec`
-        //   so it is safe to reconstruct the `Vec` by its raw parts.
-        Some(unsafe { Vec::from_raw_parts(self.ptr, self.len, self.capacity) })
-    }
-}
-
-impl Drop for ByteBuffer {
-    fn drop(&mut self) {
-        self.get_vec();
+    pub fn js_buffer(&self) -> Option<js::JsArrayBuffer> {
+        self.buffer.clone()
     }
 }
 

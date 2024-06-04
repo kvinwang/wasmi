@@ -32,6 +32,7 @@ multi-stash = { version = "0.2.0" }
 num-traits = { workspace = true }
 num-derive = "0.4"
 arrayvec = { version = "0.7.4", default-features = false }
+js = { version = "0.1.0", path = "../../../../qjs-sys/qjsbind", package = "qjsbind", default-features = false }
 
 [dev-dependencies]
 wat = "1"
@@ -49,6 +50,7 @@ std = [
     "spin/std",
     "num-traits/std",
     "arrayvec/std",
+    "js/std",
 ]
 # Tells the `wasmi` crate to avoid using hash based data structures.
 # 
