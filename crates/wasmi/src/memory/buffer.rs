@@ -1,6 +1,5 @@
-use core::mem::ManuallyDrop;
 use std::cell::RefCell;
-use std::{slice, vec::Vec};
+use std::slice;
 
 /// A byte buffer implementation.
 ///
@@ -36,30 +35,6 @@ pub struct ByteBuffer {
 // `ByteBuffer` is essentially an `enum`` of `Vec<u8>` or `&'static mut [u8]`.
 // Both of them are `Send` so this is sound.
 unsafe impl Send for ByteBuffer {}
-
-/// Decomposes the `Vec<u8>` into its raw components.
-///
-/// Returns the raw pointer to the underlying data, the length of
-/// the vector (in bytes), and the allocated capacity of the
-/// data (in bytes). These are the same arguments in the same
-/// order as the arguments to [`Vec::from_raw_parts`].
-///
-/// # Safety
-///
-/// After calling this function, the caller is responsible for the
-/// memory previously managed by the `Vec`. The only way to do
-/// this is to convert the raw pointer, length, and capacity back
-/// into a `Vec` with the [`Vec::from_raw_parts`] function, allowing
-/// the destructor to perform the cleanup.
-///
-/// # Note
-///
-/// This utility method is required since [`Vec::into_raw_parts`] is
-/// not yet stable unfortunately. (Date: 2024-03-14)
-fn vec_into_raw_parts(vec: Vec<u8>) -> (*mut u8, usize, usize) {
-    let mut vec = ManuallyDrop::new(vec);
-    (vec.as_mut_ptr(), vec.len(), vec.capacity())
-}
 
 std::thread_local! {
     static CURRENT_JS_CONTEXT: RefCell<Option<js::Context>> = RefCell::new(None);
