@@ -33,6 +33,7 @@ num-traits = { workspace = true }
 num-derive = "0.4"
 arrayvec = { version = "0.7.4", default-features = false }
 js = { version = "0.1.0", path = "../../../../qjs-sys/qjsbind", package = "qjsbind", default-features = false }
+log = "0.4"
 
 [dev-dependencies]
 wat = "1"

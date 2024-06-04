@@ -62,6 +62,7 @@ impl ByteBuffer {
     ///
     /// If there is not enough memory to initialize `initial_len` bytes.
     pub fn new(initial_len: usize) -> Self {
+        log::debug!(target: "js::wasm", "allocating byte buffer with initial length {}", initial_len);
         let buffer = js::JsArrayBuffer::new(&current_js_context(), initial_len)
             .expect("failed to allocate memory");
         let ptr = buffer.as_ptr() as _;
@@ -102,6 +103,7 @@ impl ByteBuffer {
     /// - If the current size of the [`ByteBuffer`] is larger than `new_size`.
     /// - If backed by static buffer and `new_size` is larger than it's capacity.
     pub fn grow(&mut self, new_size: usize) {
+        log::debug!(target: "js::wasm", "growing byte buffer from {} to {}", self.len(), new_size);
         assert!(new_size >= self.len());
         match &self.buffer {
             Some(buffer) => {
