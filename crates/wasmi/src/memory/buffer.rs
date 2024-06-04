@@ -69,7 +69,7 @@ pub fn with_js_context<T>(js_ctx: &js::Context, f: impl FnOnce() -> T) -> T {
     CURRENT_JS_CONTEXT.with(|ctx| {
         *ctx.borrow_mut() = Some(js_ctx.clone());
     });
-    let v = f(); 
+    let v = f();
     CURRENT_JS_CONTEXT.with(|ctx| {
         *ctx.borrow_mut() = None;
     });
@@ -77,9 +77,7 @@ pub fn with_js_context<T>(js_ctx: &js::Context, f: impl FnOnce() -> T) -> T {
 }
 
 fn current_js_context() -> js::Context {
-    CURRENT_JS_CONTEXT.with(|ctx| {
-        ctx.borrow().clone().expect("no current JS context")
-    })
+    CURRENT_JS_CONTEXT.with(|ctx| ctx.borrow().clone().expect("no current JS context"))
 }
 
 impl ByteBuffer {
@@ -173,8 +171,8 @@ impl ByteBuffer {
         unsafe { slice::from_raw_parts_mut(self.ptr, self.len) }
     }
 
-    pub fn js_buffer(&self) -> Option<js::JsArrayBuffer> {
-        self.buffer.clone()
+    pub fn js_buffer(&self) -> Option<&js::JsArrayBuffer> {
+        self.buffer.as_ref()
     }
 }
 

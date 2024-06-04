@@ -990,6 +990,14 @@ impl<T> Store<T> {
             .get(entity_index)
             .unwrap_or_else(|| panic!("failed to resolve stored host function: {entity_index:?}"))
     }
+
+    /// Iterates over all [`Memory`] instances in the [`Store`].
+    pub fn iter_memory_buffers(&self) -> impl Iterator<Item = &js::JsArrayBuffer> {
+        self.inner
+            .memories
+            .iter()
+            .flat_map(|(_, memory)| memory.js_buffer())
+    }
 }
 
 /// A trait used to get shared access to a [`Store`] in Wasmi.

@@ -314,7 +314,7 @@ impl MemoryEntity {
         self.bytes.data_mut()
     }
 
-    pub fn js_buffer(&self) -> Option<js::JsArrayBuffer> {
+    pub fn js_buffer(&self) -> Option<&js::JsArrayBuffer> {
         self.bytes.js_buffer()
     }
 
@@ -489,7 +489,7 @@ impl Memory {
         ctx.into().store.inner.resolve_memory_mut(self).data_mut()
     }
 
-    pub fn js_buffer<'a, T: 'a>(&self, ctx: impl Into<StoreContext<'a, T>>) -> Option<js::JsArrayBuffer> {
+    pub fn js_buffer<'a, T: 'a>(&self, ctx: impl Into<StoreContext<'a, T>>) -> Option<&'a js::JsArrayBuffer> {
         ctx.into().store.inner.resolve_memory(self).js_buffer()
     }
 
