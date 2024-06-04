@@ -1078,7 +1078,7 @@ impl<'a, T: AsContextMut> From<&'a mut T> for StoreContextMut<'a, T::Data> {
 #[derive(Debug)]
 #[repr(transparent)]
 pub struct StoreContextMut<'a, T> {
-    pub(crate) store: &'a mut Store<T>,
+    pub store: &'a mut Store<T>,
 }
 
 impl<'a, T> StoreContextMut<'a, T> {
