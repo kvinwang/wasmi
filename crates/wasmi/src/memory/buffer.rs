@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::slice;
+use std::vec::Vec;
 
 /// A byte buffer implementation.
 ///
@@ -37,22 +38,22 @@ pub struct ByteBuffer {
 unsafe impl Send for ByteBuffer {}
 
 std::thread_local! {
-    static CURRENT_JS_CONTEXT: RefCell<Option<js::Context>> = RefCell::new(None);
+    static JS_CONTEXT_STACK: RefCell<Vec<js::Context>> = RefCell::new(Vec::new());
 }
 
 pub fn with_js_context<T>(js_ctx: &js::Context, f: impl FnOnce() -> T) -> T {
-    CURRENT_JS_CONTEXT.with(|ctx| {
-        *ctx.borrow_mut() = Some(js_ctx.clone());
+    JS_CONTEXT_STACK.with(|ctx| {
+        ctx.borrow_mut().push(js_ctx.clone());
     });
     let v = f();
-    CURRENT_JS_CONTEXT.with(|ctx| {
-        *ctx.borrow_mut() = None;
+    JS_CONTEXT_STACK.with(|ctx| {
+        ctx.borrow_mut().pop();
     });
     v
 }
 
 fn current_js_context() -> js::Context {
-    CURRENT_JS_CONTEXT.with(|ctx| ctx.borrow().clone().expect("no current JS context"))
+    JS_CONTEXT_STACK.with(|ctx| ctx.borrow().last().cloned().expect("no current JS context"))
 }
 
 impl ByteBuffer {
