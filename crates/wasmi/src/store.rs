@@ -7,32 +7,13 @@ use crate::{
     memory::{DataSegment, MemoryError},
     module::InstantiationError,
     table::TableError,
-    Config,
-    DataSegmentEntity,
-    DataSegmentIdx,
-    ElementSegment,
-    ElementSegmentEntity,
-    ElementSegmentIdx,
-    Engine,
-    Func,
-    FuncEntity,
-    FuncIdx,
-    FuncType,
-    Global,
-    GlobalEntity,
-    GlobalIdx,
-    Instance,
-    InstanceEntity,
-    InstanceIdx,
-    Memory,
-    MemoryEntity,
-    MemoryIdx,
-    ResourceLimiter,
-    Table,
-    TableEntity,
-    TableIdx,
+    Config, DataSegmentEntity, DataSegmentIdx, ElementSegment, ElementSegmentEntity,
+    ElementSegmentIdx, Engine, Func, FuncEntity, FuncIdx, FuncType, Global, GlobalEntity,
+    GlobalIdx, Instance, InstanceEntity, InstanceIdx, Memory, MemoryEntity, MemoryIdx,
+    ResourceLimiter, Table, TableEntity, TableIdx,
 };
 use core::{
+    any::Any,
     fmt::{self, Debug},
     sync::atomic::{AtomicU32, Ordering},
 };
@@ -997,6 +978,14 @@ impl<T> Store<T> {
             .memories
             .iter()
             .flat_map(|(_, memory)| memory.js_buffer())
+    }
+
+    /// Iterates over all [`ExternObject`] instances in the [`Store`].
+    pub fn iter_extern_objects(&self) -> impl Iterator<Item = &dyn Any> {
+        self.inner
+            .extern_objects
+            .iter()
+            .map(|(_, entity)| entity.data())
     }
 }
 
